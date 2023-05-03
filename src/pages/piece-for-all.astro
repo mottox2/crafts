@@ -1,5 +1,6 @@
 ---
 import PieceForAll from '../components/piece-for-all/PieceForAll.svelte';
+import Layout from '../layouts/Layout.astro';
 ---
 
 <head>
@@ -10,12 +11,14 @@ import PieceForAll from '../components/piece-for-all/PieceForAll.svelte';
 
 <div class="p-4 md:p-12 mx-auto">
   <!-- <PieceForAll client:load /> -->
-  <PieceForAll client:only />
+  <Layout>
+    <PieceForAll client:only />
+  </Layout>
 </div>
 
 <style>
   body {
-    background-color: #1a1a1a;
+    background-color: #020617;
     color: white;
   }
 </style>

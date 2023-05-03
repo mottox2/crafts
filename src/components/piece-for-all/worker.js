@@ -29,7 +29,7 @@ function bestPattern(patterns, method) {
       return bestDistance < currentDistance ? best : current;
     });
   } else if (method === "maxDistance") {
-    console.log({ patterns })
+    console.log(patterns)
     return patterns.reduce((best, current) => {
       // console.log({patterns, method, current})
       const bestDistance = best[best.length - 1] - best[0];
@@ -47,7 +47,9 @@ function findBestWordInSentence(sentence, word, evaluationMethod) {
 }
 
 self.onmessage = function (event) {
-  const { sentence, word, evaluationMethod } = event.data;
+  const { sentence, word, evaluationMethod = 'maxDistance' } = event.data;
+  const firstResult = findBestWordInSentence(sentence, word);
+  self.postMessage(firstResult)
   const result = findBestWordInSentence(sentence, word, evaluationMethod);
   self.postMessage(result)
 };
