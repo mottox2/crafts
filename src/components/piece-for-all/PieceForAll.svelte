@@ -1,59 +1,21 @@
-
 <script>
-function findWordInSentence(sentence, word, currentIndex = 0, currentPattern = []) {
-  if (word.length === 0) {
-    return [currentPattern];
-  }
+import FindWordWorker from './worker.js?worker';
 
-  const char = word[0];
-  const remainingWord = word.slice(1);
-  let patterns = [];
-
-  for (let i = currentIndex; i < sentence.length; i++) {
-    if (sentence[i] === char) {
-      const newPattern = currentPattern.concat(i);
-      const foundPatterns = findWordInSentence(sentence, remainingWord, i + 1, newPattern);
-      if (foundPatterns)
-        patterns = patterns.concat(foundPatterns);
-    }
-  }
-
-  return patterns.length ? patterns : [];
-}
-function bestPattern(patterns, method) {
-  if (patterns.length === 0) {
-    return null
-  }
-  if (method === "minDistance") {
-    return patterns.reduce((best, current) => {
-      const bestDistance = best[best.length - 1] - best[0];
-      const currentDistance = current[current.length - 1] - current[0];
-      return bestDistance < currentDistance ? best : current;
-    });
-  } else if (method === "maxDistance") {
-    console.log({patterns})
-    return patterns.reduce((best, current) => {
-      // console.log({patterns, method, current})
-      const bestDistance = best[best.length - 1] - best[0];
-      const currentDistance = current[current.length - 1] - current[0];
-      return bestDistance > currentDistance ? best : current;
-    });
-  } else { // "firstFound" or any other method
-    return patterns[0];
-  }
-}
-
-function findBestWordInSentence(sentence, word, evaluationMethod) {
-  const patterns = findWordInSentence(sentence, word);
-  return bestPattern(patterns, evaluationMethod);
-}
-
+const worker = new FindWordWorker()
 
 const sentence = "Lorem ipsum dolor sit amet, consectetur adipisci elit, sed eiusmod tempor incidunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrum exercitationem ullam corporis suscipit laboriosam, nisi ut aliquid ex ea commodi consequatur. Quis aute iure reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint obcaecat cupiditat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum";
 let word = "peice for";
-let indexes = null;
+let workerLoaded = false;
+// const worker = new Worker(new URL('./worker.js', import.meta.url))
+let indexes = []
+worker.addEventListener("message", (event) => {
+  console.log(event.data)
+  indexes = event.data;
+  workerLoaded = true;
+});
+
 $: {
-  indexes = findBestWordInSentence(sentence, [...word].join('').replace(/ /, ''), "maxDistance")
+  worker.postMessage({ sentence, word });
 }
 
 // 入力欄を見ても何をやっていいかわからんので、ランダムボタン I'm feeling lucky を作る
@@ -68,13 +30,15 @@ $: {
 
 <input type="text" bind:value={word} class="text-2xl bg-gray-800 rounded-full px-4 py-2 w-full mb-1">
 
-{#if indexes}
+{#if indexes.length > 0}
   <p class="text-gray-300 text-sm">Found word at indexes: {indexes.join(", ")}</p>
-{:else}
+{:else if workerLoaded}
   <p class="text-gray-300 text-sm">Word not found</p>
+{:else}
+  <p class="text-gray-300 text-sm">Loading...</p>
 {/if}
 
-<p class="font-code text-lg mt-4">
+<p class="font-code text-2xl mt-4">
 {#each sentence as letter, i}
   {#if indexes && indexes.includes(i)}
     <span class="bg-yellow-500">{sentence[i]}</span>
