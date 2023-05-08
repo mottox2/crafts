@@ -9,17 +9,38 @@ let workerLoaded = false;
 let loading = false;
 // const worker = new Worker(new URL('./worker.js', import.meta.url))
 let indexes = []
+let resultWord = ""
 worker.addEventListener("message", (event) => {
   console.log(event.data)
-  indexes = event.data;
+  const { indexes: result, word: resultInput } = event.data;
+  if (!result) {
+    indexes = []
+    loading = false
+    return;
+  };
+  if (resultInput !== word) return;
+  indexes = result;
+  resultWord = resultInput;
   workerLoaded = true;
   loading = false
 });
 
+// define throttle
+let timer = null;
+function throttle(callback, interval) {
+  if (timer !== null) {
+    clearTimeout(timer);
+  }
+  timer = setTimeout(callback, interval);
+}
+
 $: {
   // 間引く
-  loading = true
-  worker.postMessage({ sentence, word: word.replace(/\s+/g, '') });
+  throttle(() => {
+    loading = true
+    worker.postMessage({ sentence, word });
+  }, 200)
+  // worker.postMessage({ sentence, word });
 }
 
 // 入力欄を見ても何をやっていいかわからんので、ランダムボタン I'm feeling lucky を作る
@@ -34,18 +55,20 @@ $: {
 </script>
 
 <div class="-mx-4">
-  <input type="text" bind:value={word} class="text-3xl bg-gray-800 sm:rounded-lg -mt-4 sm:mt-0 py-2 w-full mb-2 py-4 px-4">
+  <input type="text" bind:value={word} class="text-3xl bg-gray-800 sm:rounded-lg -mt-4 sm:mt-0 py-2 w-full mb-2 py-4 px-4" placeholder="done is better than perfect">
 </div>
 
 {#if indexes.length > 0}
   <p class="text-gray-300 text-sm">Found word at indexes: {indexes.join(", ")}</p>
+{:else if loading}
+  <p class="text-gray-300 text-sm">Loading...</p>
 {:else if workerLoaded}
   <p class="text-gray-300 text-sm">Word not found</p>
 {:else}
   <p class="text-gray-300 text-sm">Loading...</p>
 {/if}
 
-<p class="font-code text-sky-400 text-lg sm:text-3xl sm:leading-snug mt-6" class:loading="{ loading || !workerLoaded }" >
+<p class="font-code text-sky-400 text-lg sm:text-3xl sm:text-[2rem] sm:leading-snug mt-4" class:loading="{ loading || !workerLoaded }" >
 {#each sentence as letter, i}
   {#if indexes && indexes.includes(i)}
     <span class="text-yellow-500">{sentence[i]}</span>
@@ -55,9 +78,9 @@ $: {
 {/each}
 {#if !loading && indexes && indexes.length > 0}
   <span class="bg-sky-400 text-white inline-flex">
-    {#each word.toUpperCase().split(" ") as w, i}
+    {#each resultWord.toUpperCase().split(" ") as w, i}
       {w}
-      {#if i < word.toUpperCase().split(" ").length - 1}
+      {#if i < resultWord.toUpperCase().split(" ").length - 1}
         <span class="mr-2"> </span>
       {/if}
     {/each}

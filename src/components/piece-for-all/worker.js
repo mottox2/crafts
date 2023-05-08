@@ -48,10 +48,17 @@ function findBestWordInSentence(sentence, word, evaluationMethod) {
 
 self.onmessage = function (event) {
   const { sentence, word, evaluationMethod = 'maxDistance' } = event.data;
-  const firstResult = findBestWordInSentence(sentence, word);
-  self.postMessage(firstResult)
-  const result = findBestWordInSentence(sentence, word, evaluationMethod);
-  self.postMessage(result)
+  const normalizedWord = word.toLowerCase().replace(/\s+/g, '');
+  const firstResult = findBestWordInSentence(sentence, normalizedWord);
+  self.postMessage({
+    indexes: firstResult,
+    word,
+  })
+  const result = findBestWordInSentence(sentence, normalizedWord, evaluationMethod);
+  self.postMessage({
+    indexes: result,
+    word,
+  })
 };
 
 
